@@ -17,6 +17,7 @@ library(tidyverse)
 # Define UI for application that draws a histogram
 ui <- fluidPage(
     titlePanel("BF591 Final Project"),
+    h3("Nikita Tomar"),
     # HTML("<p>To use this application, download the CSV <code>deseq_res.csv</code> from the data directory of this app's repository.</p>"),
     verbatimTextOutput("debug"),
     tabsetPanel(
@@ -112,7 +113,7 @@ ui <- fluidPage(
                                 ),
                                 mainPanel(
                                     plotOutput("c2_scatter_pca"),
-                                    plotOutput("c2_beeswarm_pca")
+                                    # plotOutput("c2_beeswarm_pca")
                                 )
                             ),
                         )
@@ -125,7 +126,6 @@ ui <- fluidPage(
             "Differential Expression",
             sidebarLayout(
                 sidebarPanel(
-                    "Input Controls",
                     fileInput("c3_fileinput", "Load differential expression results",
                               accept = ".csv", placeholder = "diff_exp.csv"),
                 ),
@@ -320,7 +320,7 @@ server <- function(input, output, session) {
         }
         data <- data %>% rename(Gene = X)
         observe({ #for component 4
-            updateSliderInput(session, "c2_slider_nz_sampl", max = dim(data)[2], value = as.integer(dim(data)[2]))
+            updateSliderInput(session, "c2_slider_nz_sampl", max = dim(data)[2], value = as.integer(dim(data)[2]/2))
         })
         
         return(data)
@@ -376,7 +376,7 @@ server <- function(input, output, session) {
         output$c2_sample_text <- renderText({ 
             paste(paste(c("Total samples in dataset ", dim(m)[2]),collapse=""),
                   paste(c("Filter criteria 1: Genes with at least ", c2.slider_ptile()/100, " percentile variance"),collapse=""), 
-                  paste(c("Filter criteria 2: Genes with at least ", c2.slider_nz_sampl(), " non-zero samples"), collapse=""), collapse="\n")
+                  paste(c("Filter criteria 2: Genes with at least ", c2.slider_nz_sampl(), " non-zero samples"), collapse=""), collapse='\n')
         })
         return(tbl)
     })
@@ -412,7 +412,7 @@ server <- function(input, output, session) {
             filt_data <- log(filt_data+1)
             label_name <- "log(counts)"
         }
-        plot <- Heatmap(filt_data, cluster_rows = F, name=label_name, show_row_names = F)
+        plot <- Heatmap(filt_data, cluster_rows = F, name=label_name, show_row_names = F, heatmap_legend_param = list())
         return(plot)
     })
     output$c2_scatter_pca <- renderPlot({
@@ -420,7 +420,14 @@ server <- function(input, output, session) {
         datam <- c2_modify_data(datam, c2.slider_ptile()/100, c2.slider_nz_sampl())
         filt_data <- datam[datam$Pass=='pass',]
         filt_data <- filt_data[-c(1,2,3,4,5)]
-        
+        print(c2.slider_ptile())
+        print(c2.slider_nz_sampl())
+        print(dim(filt_data))
+        print('filt data')
+        print(head(filt_data))
+        if(dim(filt_data)[1]==0 || dim(filt_data)[2]==0) {
+            return(NULL)
+        }
         pca <- prcomp(filt_data)
         pca_df <- as.data.frame(pca$x)
         pca_var <- sapply(pca$sdev, function(x) x^2 )
@@ -439,10 +446,10 @@ server <- function(input, output, session) {
             theme(legend.position="bottom") +
             theme_minimal()
         PCN <- as.integer(c2.slider_pca())
-        output$c2_beeswarm_pca <- renderPlot({
-            bw_plot <- beeswarm(log(pca_df[,1:PCN]+1), pch = 20, col = 2:PCN+1, ylab = "log(PC+1)")
-            return(bw_plot)
-        })
+        # output$c2_beeswarm_pca <- renderPlot({
+        #     bw_plot <- beeswarm(log(pca_df[,1:PCN]+1), pch = 20, col = 2:PCN+1, ylab = "log(PC+1)")
+        #     return(bw_plot)
+        # })
         return(plot)
     })
     c3.load_data <- reactive({
