@@ -10,7 +10,7 @@ library(colourpicker) # you might need to install this.
 library(dplyr)
 library(tidyverse)
 library(ggrepel)
-library(genefilter)
+# library(genefilter)
 library(DT)
 library(tidyverse)
 library(ComplexHeatmap)
@@ -355,8 +355,11 @@ server <- function(input, output, session) {
     })
     c2_modify_data <- function(datam, ptile, nsampl) {
         m <- datam[c(-1)]
-        rv <- rowVars(m)
-        cutoff_v <- quantile(rowVars(m), ptile)
+        RowVar <- function(x, ...) {
+          rowSums((x - rowMeans(x, ...))^2, ...)/(dim(x)[2] - 1)
+        }
+        rv <- RowVar(m)
+        cutoff_v <- quantile(RowVar(m), ptile)
         idx = which(rv > cutoff_v & rowSums(m != 0) >= nsampl)
         datam$Pass = 'fail'
         datam$Pass[idx] = 'pass'
